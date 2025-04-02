@@ -145,13 +145,19 @@
         });
 
         window.onload = () => {
-          initMap();
-          locations.forEach(location => {
-            displayLocation(location);
-          });
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js');
-          }
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('service-worker.js').then(registration => {
+                    if (registration.active) {
+                        // Force a refresh from the server
+                        registration.update();
+                    }
+                });
+            }
+
+            initMap();
+            locations.forEach(location => {
+                displayLocation(location);
+            });
         };
     </script>
 </body>
