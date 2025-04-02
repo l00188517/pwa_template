@@ -32,6 +32,10 @@ async function cacheFirst(req) {
 async function networkFirst(req) {
     const cache = await caches.open('dynamic-assets');
     try {
+        if (req.url.startsWith('chrome-extension://')) {
+            return fetch(req); // Bypass caching for extension requests
+        }
+
         const res = await fetch(req);
         cache.put(req, res.clone());
         return res;
