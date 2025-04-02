@@ -1,36 +1,85 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Location Tracker PWA</title>
+    <title>Location Tracker</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        #map { height: 400px; width: 100%; }
-        #installButton {
-            display: none; /* Initially hidden */
-            padding: 10px 20px;
-            background-color: #4CAF50;
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .h1 {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #4a90e2;
             color: white;
+            margin: 0;
+        }
+
+        #installButton, #getLocation {
+            display: block;
+            width: 80%;
+            max-width: 300px;
+            margin: 20px auto;
+            padding: 15px 20px;
             border: none;
+            border-radius: 5px;
+            background-color: #4a90e2;
+            color: white;
+            font-size: 16px;
             cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #installButton:hover, #getLocation:hover {
+            background-color: #357abd;
+        }
+
+        #map {
+            height: 400px;
+            width: 90%;
+            margin: 20px auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #locationList {
+            list-style: none;
+            padding: 0;
+            width: 90%;
+            margin: 20px auto;
+        }
+
+        #locationList li {
+            background-color: white;
+            padding: 15px;
             margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
     <h1>Location Tracker</h1>
-    <button id="installButton">Install App</button>
+    <button id="installButton" style="display: none;">Install App</button>
     <button id="getLocation">Record Location</button>
     <div id="map"></div>
     <ul id="locationList"></ul>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
+        //... (rest of the javascript remains the same)
         let map;
         let markers = [];
         let locations = JSON.parse(localStorage.getItem('locations')) || [];
-        let deferredPrompt; // For install prompt
+        let deferredPrompt;
 
         function initMap() {
             map = L.map('map').setView([0, 0], 2);
