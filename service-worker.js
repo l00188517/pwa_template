@@ -43,3 +43,19 @@ async function networkFirst(req) {
         return await cache.match(req);
     }
 }
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          // Delete old caches
+          if (cacheName !== 'static-assets' && cacheName !== 'dynamic-assets') {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim(); // Activate new service worker immediately
+});
