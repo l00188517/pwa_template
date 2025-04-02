@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Location Tracker PWA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map { height: 400px; width: 100%; }
+    </style>
+</head>
+<body>
+    <h1>Location Tracker</h1>
+    <button id="getLocation">Record Location</button>
+    <div id="map"></div>
+    <ul id="locationList"></ul>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let markers = [];
+        let locations = JSON.parse(localStorage.getItem('locations')) || [];
+
+        function initMap() {
+            map = L.map('map').setView([0, 0], 2);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            locations.forEach(location => {
+                addMarker(location.latitude, location.longitude);
+            });
+        }
+
+        function addMarker(lat, lng) {
+            const marker = L.marker([lat, lng]).addTo(map);
+            markers.push(marker);
+            map.setView([lat, lng], 13);
+        }
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    const location = { latitude, longitude };
+                    locations.push(location);
+                    localStorage.setItem('locations', JSON.stringify(locations));
+                    addMarker(latitude, longitude);
+                    displayLocation(location);
+                }, error => {
+                    alert('Unable to retrieve your location');
+                });
+            } else {
+                alert('Geolocation is not supported by your browser');
+            }
+        }
+
+        function displayLocation(location) {
+            const li = document.createElement('li');
+            li.textContent = `Lat: ${location.latitude}, Lng: ${location.longitude}`;
+            document.getElementById('locationList').appendChild(li);
+        }
+
+        document.getElementById('getLocation').addEventListener('click', getLocation);
+
+        window.onload = () => {
+          initMap();
+          locations.forEach(location => {
+            displayLocation(location);
+          });
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+          }
+        };
+
+    </script>
+</body>
+</html>
