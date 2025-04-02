@@ -7,10 +7,20 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
         #map { height: 400px; width: 100%; }
+        #installButton {
+            display: none; /* Initially hidden */
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>Location Tracker</h1>
+    <button id="installButton">Install App</button>
     <button id="getLocation">Record Location</button>
     <div id="map"></div>
     <ul id="locationList"></ul>
@@ -20,6 +30,7 @@
         let map;
         let markers = [];
         let locations = JSON.parse(localStorage.getItem('locations')) || [];
+        let deferredPrompt; // For install prompt
 
         function initMap() {
             map = L.map('map').setView([0, 0], 2);
@@ -64,6 +75,26 @@
 
         document.getElementById('getLocation').addEventListener('click', getLocation);
 
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installButton').style.display = 'block';
+        });
+
+        document.getElementById('installButton').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const choiceResult = await deferredPrompt.userChoice;
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                } else {
+                    console.log('User dismissed the install prompt');
+                }
+                deferredPrompt = null;
+                document.getElementById('installButton').style.display = 'none';
+            }
+        });
+
         window.onload = () => {
           initMap();
           locations.forEach(location => {
@@ -73,7 +104,6 @@
             navigator.serviceWorker.register('service-worker.js');
           }
         };
-
     </script>
 </body>
 </html>
