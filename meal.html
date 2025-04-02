@@ -135,17 +135,23 @@
         }
 
         document.getElementById('updateButton').addEventListener('click', () => {
-            fetch('/nutrition-data') // Replace with your server endpoint
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('caloriesValue').textContent = data.calories + ' kcal';
-                    document.getElementById('carbsValue').textContent = data.carbs + ' g';
-                    document.getElementById('proteinValue').textContent = data.protein + ' g';
-                })
-                .catch(error => {
-                    console.error('Error fetching nutrition data:', error);
-                    alert('Failed to update nutrition data. Please try again.');
+            if ('caches' in window) {
+                caches.keys().then(function(cacheNames) {
+                  cacheNames.forEach(function(cacheName) {
+                    caches.delete(cacheName);
+                  });
+                }).then(function() {
+                  console.log('Cache cleared successfully.');
+                  alert('Cache cleared successfully. Reloading page.');
+                  window.location.reload(); // Reload the page to ensure fresh content
+                }).catch(function(error) {
+                  console.error('Error clearing cache:', error);
+                  alert('Error clearing cache. Please try again.');
                 });
+              } else {
+                console.log('Caches API not supported in this browser.');
+                alert('Cache clearing not supported in this browser.');
+              }
         });
     </script>
 </body>
