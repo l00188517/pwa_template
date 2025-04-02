@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nutrition Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f8f8;
+            color: #333;
+        }
+
+        nav {
+            background: linear-gradient(135deg, #ff6e7f, #bfe9ff);
+            color: white;
+            padding: 15px 0;
+            text-align: center;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 500;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+        }
+
+        .meal-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+
+        .nutrient-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2em;
+            font-weight: 500;
+            margin: 20px;
+        }
+
+        .nutrient-circle.calories { border: 5px solid #ff6e7f; color: #ff6e7f; }
+        .nutrient-circle.carbs { border: 5px solid #56ccf2; color: #56ccf2; }
+        .nutrient-circle.protein { border: 5px solid #2fdb77; color: #2fdb77; }
+
+        .tips-container {
+            padding: 20px;
+            background-color: white;
+            margin: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .tips-container h2 {
+            color: #ff6e7f;
+            text-align: center;
+        }
+
+        .tips-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .tips-list li {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html">Location</a>
+        <a href="#meal">Meal</a>
+        <a href="#tips">Tips</a>
+        <a href="#settings">Settings</a>
+    </nav>
+    <h1 id="meal">Meal Nutrition</h1>
+    <div class="meal-container">
+        <div class="nutrient-circle calories">
+            <span>Calories</span>
+            <span>500 kcal</span>
+        </div>
+        <div class="nutrient-circle carbs">
+            <span>Carbs</span>
+            <span>75g</span>
+        </div>
+        <div class="nutrient-circle protein">
+            <span>Protein</span>
+            <span>30g</span>
+        </div>
+    </div>
+
+    <div id="tips" class="tips-container">
+        <h2>Exercise Tips</h2>
+        <ul class="tips-list">
+            <li><strong>Cardio:</strong> Aim for at least 150 minutes of moderate-intensity cardio per week.</li>
+            <li><strong>Strength Training:</strong> Include strength training exercises at least two days a week.</li>
+            <li><strong>Variety:</strong> Mix up your workouts to keep things interesting and challenge different muscle groups.</li>
+            <li><strong>Consistency:</strong> The key to fitness is consistency. Find a routine you enjoy and stick with it.</li>
+            <li><strong>Proper Form:</strong> Focus on maintaining proper form to prevent injuries.</li>
+            <li><strong>Stay Hydrated:</strong> Drink plenty of water before, during, and after your workouts.</li>
+            <li><strong>Rest and Recovery:</strong> Allow your body adequate rest for muscle recovery and growth.</li>
+            <li><strong>Listen to Your Body:</strong> Don't push yourself too hard, especially when starting a new routine.</li>
+            <li><strong>Example Exercises:</strong>
+                <ul>
+                    <li>Squats</li>
+                    <li>Push-ups</li>
+                    <li>Plank</li>
+                    <li>Running/Jogging</li>
+                    <li>Swimming</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+    </script>
+</body>
+</html>
