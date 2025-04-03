@@ -192,51 +192,25 @@
             }
         });
 
-        window.onload = () => {
-            checkForUpdates();
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('service-worker.js').then(registration => {
-                    if (registration.active) {
-                        // Force a refresh from the server
-                        registration.update();
-                    }
+       document.getElementById('updateButton').addEventListener('click', () => {
+            if ('caches' in window) {
+                caches.keys().then(function(cacheNames) {
+                    cacheNames.forEach(function(cacheName) {
+                        caches.delete(cacheName);
+                    });
+                }).then(function() {
+                    console.log('Cache cleared successfully.');
+                    alert('Cache cleared successfully. Reloading page.');
+                    window.location.reload();
+                }).catch(function(error) {
+                    console.error('Error clearing cache:', error);
+                    alert('Error clearing cache. Please try again.');
                 });
+            } else {
+                console.log('Caches API not supported in this browser.');
+                alert('Cache clearing not supported in this browser.');
             }
-
-            initMap();
-            locations.forEach(location => {
-                displayLocation(location);
-            });
-        };
-
-        // Check for updates periodically
-        setInterval(checkForUpdates, 60 * 60 * 1000); // Check every hour
-        
-        // Check for service worker updates
-    function checkForUpdates() {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js').then(registration => {
-                registration.onupdatefound = () => {
-                    const installingWorker = registration.installing;
-                    installingWorker.onstatechange = () => {
-                        if (installingWorker.state === 'installed') {
-                            if (navigator.serviceWorker.controller) {
-                                // New content is available, prompt the user to refresh.
-                                console.log('New content is available; please refresh.');
-                                if (confirm("New update available, refresh the page?")){
-                                    window.location.reload();
-                                }
-
-                            } else {
-                                // Content is cached for offline use.
-                                console.log('Content is cached for offline use.');
-                            }
-                        }
-                    };
-                };
-            });
-        }
-    }
+        });
     </script>
 </body>
 </html>
