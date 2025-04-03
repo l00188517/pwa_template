@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Location Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #ff6e7f, #bfe9ff);
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+        }
+        
+        #installButton, #getLocation {
+            display: block;
+            width: 80%;
+            max-width: 300px;
+            margin: 20px auto;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50; /* Green buttons */
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #installButton:hover, #getLocation:hover {
+            background-color: #45a049; /* Darker green hover */
+        }
+
+        #map {
+            height: 400px;
+            width: 90%;
+            margin: 20px auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #locationList {
+            list-style: none;
+            padding: 0;
+            width: 90%;
+            margin: 20px auto;
+        }
+
+        #locationList li {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .space { 
+            margin: 70px;
+        }
+	
+	button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        #postButton {
+            background-color: #4CAF50; /* Green */
+            color: white;
+        }
+
+        #clearButton {
+            background-color: #f44336; /* Red */
+            color: white;
+        }
+
+        #showLocationButton {
+            background-color: #008CBA; /* Blue */
+            color: white;
+        }
+
+        .bottom-nav {
+            background: linear-gradient(135deg, #ff6e7f, #bfe9ff);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            position: fixed; /* Use fixed positioning */
+            bottom: 0;
+            width: 100%;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000; /* Ensure it's on top of other elements */
+        }
+
+        .bottom-nav a {
+            text-decoration: none;
+            color: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .bottom-nav a.active {
+            color: #fff; /* Highlight active link */
+        }
+
+        .bottom-nav .material-icons {
+            font-size: 15px;
+            margin-bottom: 5px;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Message Map</h1>
+    <input type="text" id="nameInput" placeholder="Enter your name"><br>
+    <textarea id="messageInput" placeholder="Enter your message"></textarea><br>
+    <button id="postButton">Post Message</button>
+    <button id="clearButton">Clear Messages</button>
+    <button id="showLocationButton">Show My Location</button>
+    <input type="text" id="searchFilter" placeholder="Search by name or message">
+    <div id="map"></div>
+    <div id="messageList"></div>
+    <div class="space"></div>
+
+    <div class="bottom-nav">
+        <a href="index.html" class="active">
+            <span class="material-icons">location_on</span>
+            <span>Location</span>
+        </a>
+        <a href="meal.html">
+            <span class="material-icons">restaurant</span>
+            <span>Meal</span>
+        </a>
+        <a href="">
+            <span class="material-icons">lightbulb</span>
+            <span>Tips</span>
+        </a>
+        <a href="#settings" id="updateButton">
+            <span class="material-icons">settings</span>
+            <span>Settings</span>
+        </a>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+   <script>
+        let map;
+        let messages = [];
+        let userMarker;
+
+        function initMap() {
+            map = L.map('map').setView([0, 0], 2);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            updateMap();
+        }
+
+        function postMessage() {
+            const messageText = document.getElementById('messageInput').value;
+            const name = document.getElementById('nameInput').value;
+            if (!messageText || !name) {
+                alert("Please enter both a name and a message.");
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported.");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(position => {
+                const { latitude, longitude } = position.coords;
+                addMessageWithOffset(messageText, latitude, longitude, name);
+                updateMap();
+                document.getElementById('messageInput').value = "";
+            }, () => {
+                alert("Could not get your location.");
+            });
+        }
+
+        function addMessageWithOffset(text, lat, lng, name) {
+            let newLat = lat;
+            let newLng = lng;
+            const offset = 0.00045;
+            let duplicate = true;
+            const timestamp = new Date().toLocaleString();
+
+            for (let i = 0; i < 10 && duplicate; i++) {
+                duplicate = false;
+                const randomAngle = Math.random() * 2 * Math.PI;
+                newLat = lat + offset * Math.sin(randomAngle);
+                newLng = lng + offset * Math.cos(randomAngle);
+
+                for (const message of messages) {
+                    if (Math.abs(message.lat - newLat) < 0.00001 && Math.abs(message.lng - newLng) < 0.00001) {
+                        duplicate = true;
+                        break;
+                    }
+                }
+            }
+
+            messages.push({ text: text, lat: newLat, lng: newLng, name: name, timestamp: timestamp });
+        }
+
+        function updateMap() {
+            if (!map) return;
+
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker && layer !== userMarker) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            const filter = document.getElementById('searchFilter').value.toLowerCase();
+
+            messages.forEach((message, index) => {
+                if (message.name.toLowerCase().includes(filter) || message.text.toLowerCase().includes(filter)) {
+                    const popupContent = `<b>${message.name}</b><br>${message.text}<br>${message.timestamp}<br><button onclick="deleteMessage(${index})">Delete</button>`;
+                    L.marker([message.lat, message.lng]).addTo(map).bindPopup(popupContent);
+                }
+            });
+
+            if (messages.length > 0) {
+                map.setView([messages[messages.length - 1].lat, messages[messages.length - 1].lng], 13);
+            }
+            displayMessageList();
+        }
+
+        function deleteMessage(index) {
+            messages.splice(index, 1);
+            updateMap();
+        }
+
+        function displayMessageList() {
+            const messageListDiv = document.getElementById('messageList');
+            messageListDiv.innerHTML = '';
+            const filter = document.getElementById('searchFilter').value.toLowerCase();
+
+            messages.forEach((message, index) => {
+                if (message.name.toLowerCase().includes(filter) || message.text.toLowerCase().includes(filter)) {
+                    const messageItem = document.createElement('div');
+                    messageItem.className = 'messageItem';
+                    messageItem.innerHTML = `<b>${message.name}</b>: ${message.text} (${message.timestamp}) <button onclick="deleteMessage(${index})">Delete</button>`;
+                    messageListDiv.appendChild(messageItem);
+                }
+            });
+        }
+
+        function showMyLocation() {
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported.");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(position => {
+                const { latitude, longitude } = position.coords;
+                const greenIcon = new L.Icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                });
+                if (userMarker) {
+                    userMarker.setLatLng([latitude, longitude]);
+                } else {
+                    userMarker = L.marker([latitude, longitude], {icon: greenIcon}).addTo(map).bindPopup("Your Location");
+                }
+                map.setView([latitude, longitude], 15);
+            }, () => {
+                alert("Could not get your location.");
+            });
+        }
+
+        document.getElementById('postButton').addEventListener('click', postMessage);
+        document.getElementById('clearButton').addEventListener('click', () => {
+            messages = [];
+            updateMap();
+        });
+        document.getElementById('searchFilter').addEventListener('input', updateMap);
+        document.getElementById('showLocationButton').addEventListener('click', showMyLocation);
+        initMap();
+
+        if (localStorage.getItem('savedMessages')) {
+            try {
+                messages = JSON.parse(localStorage.getItem('savedMessages'));
+                updateMap();
+            } catch (e) {
+                console.error("Error retrieving messages from local storage:", e);
+            }
+        }
+
+        window.addEventListener('beforeunload', () => {
+            try {
+                localStorage.setItem('savedMessages', JSON.stringify(messages));
+            } catch (e) {
+                console.error("Error saving messages to local storage:", e);
+            }
+        });
+    </script>
+</body>
+</html>
