@@ -12,6 +12,9 @@
             padding: 0;
             background-color: #f8f8f8;
             color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Ensure full viewport height */
         }
 
         nav {
@@ -36,8 +39,8 @@
 
         .meal-container {
             display: flex;
-            justify-content: center; /* Center horizontally */
-            flex-wrap: nowrap; /* Prevent wrapping */
+            justify-content: center;
+            flex-wrap: nowrap;
             padding: 10px;
         }
 
@@ -64,6 +67,7 @@
             margin: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            flex-grow: 1; /* Allow tips-container to take up remaining space */
         }
 
         .tips-container h2 {
@@ -82,6 +86,22 @@
             border-bottom: 1px solid #eee;
         }
 
+        .bottom-nav {
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            position: sticky; /* Stick to the bottom */
+            bottom: 0;
+            width: 100%;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .bottom-nav a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -129,6 +149,14 @@
             </li>
         </ul>
     </div>
+
+    <div class="bottom-nav">
+        <a href="index.html">Location</a>
+        <a href="">Meal</a>
+        <a href="#tips">Tips</a>
+        <a href="#settings" id="updateButton">Settings</a>
+    </div>
+
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js');
@@ -137,21 +165,21 @@
         document.getElementById('updateButton').addEventListener('click', () => {
             if ('caches' in window) {
                 caches.keys().then(function(cacheNames) {
-                  cacheNames.forEach(function(cacheName) {
-                    caches.delete(cacheName);
-                  });
+                    cacheNames.forEach(function(cacheName) {
+                        caches.delete(cacheName);
+                    });
                 }).then(function() {
-                  console.log('Cache cleared successfully.');
-                  alert('Cache cleared successfully. Reloading page.');
-                  window.location.reload(); // Reload the page to ensure fresh content
+                    console.log('Cache cleared successfully.');
+                    alert('Cache cleared successfully. Reloading page.');
+                    window.location.reload();
                 }).catch(function(error) {
-                  console.error('Error clearing cache:', error);
-                  alert('Error clearing cache. Please try again.');
+                    console.error('Error clearing cache:', error);
+                    alert('Error clearing cache. Please try again.');
                 });
-              } else {
+            } else {
                 console.log('Caches API not supported in this browser.');
                 alert('Cache clearing not supported in this browser.');
-              }
+            }
         });
     </script>
 </body>
