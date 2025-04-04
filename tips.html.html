@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Location Tracker</title>
+    <title>Message Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
@@ -23,7 +23,7 @@
             padding: 20px 0;
             margin: 0;
         }
-        
+
         #installButton, #getLocation {
             display: block;
             width: 80%;
@@ -51,14 +51,14 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
-        #locationList {
+        #messageList {
             list-style: none;
             padding: 0;
             width: 90%;
             margin: 20px auto;
         }
 
-        #locationList li {
+        .messageItem {
             background-color: white;
             padding: 15px;
             margin-bottom: 10px;
@@ -66,11 +66,11 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .space { 
+        .space {
             margin: 70px;
         }
-	
-	button {
+
+        button {
             padding: 10px 20px;
             border: none;
             border-radius: 5px;
@@ -123,11 +123,60 @@
             margin-bottom: 5px;
         }
 
+        .messageActions {
+            display: flex;
+            flex-direction: column; /* Stack buttons vertically */
+            align-items: center; /* Center buttons horizontally */
+            margin-top: 10px;
+        }
+
+        .messageActions > div { /* Group like, comment, share */
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .messageActions .edit-delete-row {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .messageActions button {
+            padding: 5px 10px;
+            font-size: 14px;
+            margin: 5px; /* Add margin between buttons */
+        }
+
+        .commentSection {
+            margin-top: 10px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+
+        .commentItem {
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .commentItem button {
+            padding: 2px 5px;
+            font-size: 12px;
+        }
+
+        .edit-input {
+            width: 80%;
+            padding: 5px;
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
     <h1>Message Map</h1>
+    <br>
     <input type="text" id="nameInput" placeholder="Enter your name"><br>
+    <br>
     <textarea id="messageInput" placeholder="Enter your message"></textarea><br>
     <button id="postButton">Post Message</button>
     <button id="clearButton">Clear Messages</button>
@@ -157,7 +206,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-   <script>
+    <script>
         let map;
         let messages = [];
         let userMarker;
@@ -214,7 +263,7 @@
                 }
             }
 
-            messages.push({ text: text, lat: newLat, lng: newLng, name: name, timestamp: timestamp });
+            messages.push({ text: text, lat: newLat, lng: newLng, name: name, timestamp: timestamp, likes: 0, comments: [], openCount: 0 }); // Initialize openCount to 0
         }
 
         function updateMap() {
@@ -230,8 +279,30 @@
 
             messages.forEach((message, index) => {
                 if (message.name.toLowerCase().includes(filter) || message.text.toLowerCase().includes(filter)) {
-                    const popupContent = `<b>${message.name}</b><br>${message.text}<br>${message.timestamp}<br><button onclick="deleteMessage(${index})">Delete</button>`;
-                    L.marker([message.lat, message.lng]).addTo(map).bindPopup(popupContent);
+                    const popupContent = `
+                        <b>${message.name}</b><br>${message.text}<br>${message.timestamp}<br>
+                        Views: ${message.openCount}<br>
+                        <div class="messageActions">
+                            <div class="edit-delete-row">
+                                <button onclick="editMessage(${index})">Edit</button>
+                                <button onclick="deleteMessage(${index})">Delete</button>
+                            </div>
+                            <div>
+                                <button onclick="likeMessage(${index})">Like (${messages[index].likes})</button>
+                                <button onclick="commentMessage(${index})">Comment</button>
+                                <button onclick="shareMessage(${index})">Share</button>
+                            </div>
+                        </div>
+                        ${displayComments(index)}
+                    `;
+                    const marker = L.marker([message.lat, message.lng]).addTo(map).bindPopup(popupContent);
+                    marker.on('popupopen', () => {
+                        message.openCount++; // Increment openCount when popup opens
+                        marker.setPopupContent(popupContent); // Update popup content
+                    });
+                    marker.on('popupclose', () => {
+                        updateMap();
+                    });
                 }
             });
 
@@ -255,10 +326,44 @@
                 if (message.name.toLowerCase().includes(filter) || message.text.toLowerCase().includes(filter)) {
                     const messageItem = document.createElement('div');
                     messageItem.className = 'messageItem';
-                    messageItem.innerHTML = `<b>${message.name}</b>: ${message.text} (${message.timestamp}) <button onclick="deleteMessage(${index})">Delete</button>`;
+                    messageItem.innerHTML = `
+                        <b>${message.name}</b>: ${message.text} (${message.timestamp})
+                        <div class="messageActions">
+                            <div class="edit-delete-row">
+                                <button onclick="editMessage(${index})">Edit</button>
+                                <button onclick="deleteMessage(${index})">Delete</button>
+                            </div>
+                            <div>
+                                <button onclick="likeMessage(${index})">Like (${messages[index].likes})</button>
+                                <button onclick="commentMessage(${index})">Comment</button>
+                                <button onclick="shareMessage(${index})">Share</button>
+                            </div>
+                        </div>
+                        ${displayComments(index)}
+                    `;
                     messageListDiv.appendChild(messageItem);
                 }
             });
+        }
+
+        function displayComments(messageIndex) {
+            let commentsHtml = '<div class="commentSection">';
+            messages[messageIndex].comments.forEach((comment, commentIndex) => {
+                commentsHtml += `<div class="commentItem">
+                    <span>${comment.text}</span>
+                    <button onclick="likeComment(${messageIndex}, ${commentIndex})">Like (${comment.likes || 0})</button>
+                </div>`;
+            });
+            commentsHtml += '</div>';
+            return commentsHtml;
+        }
+
+        function likeComment(messageIndex, commentIndex) {
+            if (!messages[messageIndex].comments[commentIndex].likes) {
+                messages[messageIndex].comments[commentIndex].likes = 0;
+            }
+            messages[messageIndex].comments[commentIndex].likes++;
+            updateMap();
         }
 
         function showMyLocation() {
@@ -280,12 +385,51 @@
                 if (userMarker) {
                     userMarker.setLatLng([latitude, longitude]);
                 } else {
-                    userMarker = L.marker([latitude, longitude], {icon: greenIcon}).addTo(map).bindPopup("Your Location");
+                    userMarker = L.marker([latitude, longitude], { icon: greenIcon }).addTo(map).bindPopup("Your Location");
                 }
                 map.setView([latitude, longitude], 15);
             }, () => {
                 alert("Could not get your location.");
             });
+        }
+
+        function likeMessage(index) {
+            messages[index].likes++;
+            updateMap();
+        }
+
+        function commentMessage(index) {
+            const comment = prompt("Enter your comment:");
+            if (comment) {
+                messages[index].comments.push({ text: comment, likes: 0 });
+                updateMap();
+            }
+        }
+
+        function shareMessage(index) {
+            const shareText = `Check out this message: "${messages[index].text}" by ${messages[index].name}`;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Shared Message',
+                    text: shareText,
+                    url: window.location.href
+                }).then(() => console.log('Successful share'))
+                    .catch((error) => console.log('Error sharing', error));
+            } else {
+                alert("Sharing is not supported on this browser.");
+            }
+        }
+
+        function editMessage(index) {
+            const message = messages[index];
+            const newName = prompt("Enter new name:", message.name);
+            const newMessage = prompt("Enter new message:", message.text);
+
+            if (newName && newMessage) {
+                message.name = newName;
+                message.text = newMessage;
+                updateMap();
+            }
         }
 
         document.getElementById('postButton').addEventListener('click', postMessage);
