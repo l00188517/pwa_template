@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step Counter PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #ff6e7f, #bfe9ff);
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+        }
+
+        #stepCount {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        #startButton, #resetButton {
+            padding: 10px 20px;
+            font-size: 1em;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #error {
+            color: red;
+        }
+
+        .bottom-nav {
+            background: linear-gradient(135deg, #ff6e7f, #bfe9ff);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            position: fixed; /* Use fixed positioning */
+            bottom: 0;
+            width: 100%;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000; /* Ensure it's on top of other elements */
+        }
+
+        .bottom-nav a {
+            text-decoration: none;
+            color: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .bottom-nav a.active {
+            color: #fff; /* Highlight active link */
+        }
+
+        .bottom-nav .material-icons {
+            font-size: 15px;
+            margin-bottom: 5px;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Step Counter</h1>
+    <div id="stepCount">0</div>
+    <button id="startButton">Start Counting</button>
+    <button id="resetButton">Reset</button>
+    <div id="error"></div>
+
+    <div class="bottom-nav">
+	<a href="index.html">
+            <span class="material-icons">location_on</span>
+            <span>Location</span>
+        </a>
+        <a href="" class="active">
+            <span class="material-icons">directions_walk</span>
+            <span>Steps</span>
+        </a>
+        <a href="meal.html">
+            <span class="material-icons">restaurant</span>
+            <span>Meal</span>
+        </a>
+        <a href="tips.html">
+            <span class="material-icons">lightbulb</span>
+            <span>Tips</span>
+        </a>
+        <a href="#settings" id="updateButton">
+            <span class="material-icons">settings</span>
+            <span>Settings</span>
+        </a>
+    </div>
+
+    <script>
+        let stepCount = 0;
+        let isCounting = false;
+        let sensor;
+
+        const stepCountDisplay = document.getElementById('stepCount');
+        const startButton = document.getElementById('startButton');
+        const resetButton = document.getElementById('resetButton');
+        const errorDisplay = document.getElementById('error');
+
+        function updateDisplay() {
+            stepCountDisplay.textContent = stepCount;
+        }
+
+        function handleStep(event) {
+            stepCount++;
+            updateDisplay();
+        }
+
+        startButton.addEventListener('click', async () => {
+            if (!isCounting) {
+                try {
+                    if (typeof window.Accelerometer === 'undefined' && typeof window.LinearAccelerationSensor === 'undefined' && typeof window.Gyroscope === 'undefined' && typeof window.AbsoluteOrientationSensor === 'undefined') {
+                        errorDisplay.textContent = "Sensor access is not available on this device/browser.";
+                        return;
+                    }
+                    if (typeof window.StepCounter === 'undefined' && typeof window.Accelerometer === 'undefined' && typeof window.LinearAccelerationSensor === 'undefined' && typeof window.Gyroscope === 'undefined' && typeof window.AbsoluteOrientationSensor === 'undefined') {
+                        errorDisplay.textContent = "Step Counter API or fallbacks not supported. Using a simple increment. This is not accurate.";
+                        sensor = {
+                            start: () => { },
+                            stop: () => { },
+                            onreading: () => {
+                                if (Date.now() % 4 === 0) {
+                                    handleStep();
+                                }
+                            }
+                        }
+                        sensor.start();
+                        setInterval(() => {
+                            sensor.onreading()
+                        }, 100);
+                    } else if (typeof window.StepCounter !== 'undefined') {
+                        sensor = new StepCounter({ frequency: 60 });
+                        sensor.addEventListener('reading', handleStep);
+                        sensor.start();
+                    } else {
+                        let lastX = null;
+                        let lastY = null;
+                        let lastZ = null;
+                        let moveCounter = 0;
+
+                        sensor = new LinearAccelerationSensor({ frequency: 60 });
+                        sensor.addEventListener('reading', (event) => {
+                            const x = event.x;
+                            const y = event.y;
+                            const z = event.z;
+
+                            if (lastX !== null) {
+                                const deltaX = Math.abs(lastX - x);
+                                const deltaY = Math.abs(lastY - y);
+                                const deltaZ = Math.abs(lastZ - z);
+
+                                if (deltaX + deltaY + deltaZ > 3) {
+                                    moveCounter++;
+                                }
+
+                                if (moveCounter > 8) {
+                                    handleStep();
+                                    moveCounter = 0;
+                                }
+                            }
+
+                            lastX = x;
+                            lastY = y;
+                            lastZ = z;
+                        });
+                        sensor.start();
+                    }
+
+                    isCounting = true;
+                    startButton.textContent = 'Stop Counting';
+                    errorDisplay.textContent = "";
+
+                } catch (error) {
+                    errorDisplay.textContent = "Sensor access denied or not available.";
+                    console.error('Sensor error:', error);
+                }
+            } else {
+                if (sensor) {
+                    sensor.stop();
+                }
+                isCounting = false;
+                startButton.textContent = 'Start Counting';
+            }
+        });
+
+        resetButton.addEventListener('click', () => {
+            stepCount = 0;
+            updateDisplay();
+        });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+
+	 document.getElementById('updateButton').addEventListener('click', () => {
+            if ('caches' in window) {
+                caches.keys().then(function(cacheNames) {
+                    cacheNames.forEach(function(cacheName) {
+                        caches.delete(cacheName);
+                    });
+                }).then(function() {
+                    console.log('Cache cleared successfully.');
+                    alert('Cache cleared successfully. Reloading page.');
+                    window.location.reload();
+                }).catch(function(error) {
+                    console.error('Error clearing cache:', error);
+                    alert('Error clearing cache. Please try again.');
+                });
+            } else {
+                console.log('Caches API not supported in this browser.');
+                alert('Cache clearing not supported in this browser.');
+            }
+        });
+
+    </script>
+</body>
+</html>
+
